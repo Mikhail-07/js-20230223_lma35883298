@@ -268,4 +268,11 @@ export default class SortableTable {
     this.subElements.body.append(...rows.childNodes);
   }
 
+  destroy() {
+    this.remove();
+    this.subElements = {};
+    this.element = null;
+
+    window.removeEventListener('scroll', this.onWindowScroll);
+  }
 }
