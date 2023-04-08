@@ -1,4 +1,4 @@
-import SortableList from '../../2-sortable-list/solution/index.js';
+import SortableList from '../2-sortable-list/index.js'
 import escapeHtml from './utils/escape-html.js';
 import fetchJson from './utils/fetch-json.js';
 
@@ -31,7 +31,7 @@ export default class ProductForm {
     fileInput.type = 'file';
     fileInput.accept = 'image/*';
 
-    fileInput.onchange = async () => {
+    fileInput.addEventListener = async () => {
       const [file] = fileInput.files;
 
       if (file) {
@@ -49,30 +49,30 @@ export default class ProductForm {
             Authorization: `Client-ID ${IMGUR_CLIENT_ID}`
           },
           body: formData,
+          referrer: ''
         });
 
         imageListContainer.firstElementChild.append(this.getImageItem(result.data.link, file.name));
-
+        
+        
         uploadImage.classList.remove('is-loading');
         uploadImage.disabled = false;
 
-        // Remove input from body
         fileInput.remove();
       }
     };
 
-    // must be in body for IE
-    fileInput.hidden = true;
-    document.body.appendChild(fileInput);
-    fileInput.click();
+  fileInput.hidden = true;
+  document.body.append (fileInput);
+  fileInput.click();  
   };
 
-  constructor(productId) {
+  constructor (productId){
     this.productId = productId;
-  }
+  } 
 
   template() {
-    return `
+    return /*html*/`
       <div class="product-form">
 
       <form data-element="productForm" class="form-grid">
@@ -85,6 +85,7 @@ export default class ProductForm {
               type="text"
               name="title"
               class="form-control"
+              data-element="title"
               placeholder="Название товара">
           </fieldset>
         </div>
@@ -95,7 +96,8 @@ export default class ProductForm {
             id="description"
             class="form-control"
             name="description"
-            placeholder="Описание товара"></textarea>
+            placeholder="Описание товара">
+          </textarea>
         </div>
 
         <div class="form-group form-group__wide">
@@ -157,7 +159,10 @@ export default class ProductForm {
 
         <div class="form-buttons">
           <button type="submit" name="save" class="button-primary-outline">
-            ${this.productId ? 'Сохранить' : 'Добавить'} товар
+            ${this.productId 
+              ? 'Сохранить' 
+              : 'Добавить'} 
+            товар
           </button>
         </div>
       </form>
@@ -169,7 +174,7 @@ export default class ProductForm {
     const categoriesPromise = this.loadCategoriesList();
     const productPromise = this.productId
       ? this.loadProductData(this.productId)
-      : [this.defaultFormData];
+      : Promise.resolve(this.defaultFormData);
 
     const [categoriesData, productResponse] = await Promise.all([categoriesPromise, productPromise]);
     const [productData] = productResponse;
@@ -196,6 +201,7 @@ export default class ProductForm {
       : this.getEmptyTemplate();
 
     this.element = element.firstElementChild;
+
     this.subElements = this.getSubElements(this.element);
   }
 
@@ -208,6 +214,7 @@ export default class ProductForm {
 
   async save() {
     const product = this.getFormData();
+
     const result = await fetchJson(`${BACKEND_URL}/api/rest/products`, {
       method: this.productId ? 'PATCH' : 'PUT',
       headers: {
@@ -220,16 +227,19 @@ export default class ProductForm {
   }
 
   getFormData() {
-    const { productForm, imageListContainer } = this.subElements;
+    const { imageListContainer, productForm } = this.subElements;
     const excludedFields = ['images'];
     const formatToNumber = ['price', 'quantity', 'discount', 'status'];
     const fields = Object.keys(this.defaultFormData).filter(item => !excludedFields.includes(item));
+    const getValue = field => productForm.querySelector(`[name=${field}]`);
     const values = {};
 
     for (const field of fields) {
+      const value = getValue(field);
+
       values[field] = formatToNumber.includes(field)
-        ? parseInt(productForm.querySelector(`#${field}`).value)
-        : productForm.querySelector(`#${field}`).value;
+        ? parseInt(value)
+        : value;
     }
 
     const imagesHTMLCollection = imageListContainer.querySelectorAll('.sortable-table__cell-img');
